@@ -28,6 +28,8 @@ class ViewController: UIViewController, ARSKViewDelegate {
         if let scene = SKScene(fileNamed: "Scene") {
             sceneView.presentScene(scene)
         }
+//        let scene = Scene(size: self.view.frame.size)
+//        sceneView.presentScene(scene)
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -56,9 +58,16 @@ class ViewController: UIViewController, ARSKViewDelegate {
     
     func view(_ view: ARSKView, nodeFor anchor: ARAnchor) -> SKNode? {
         // Create and configure a node for the anchor added to the view's session.
-        let labelNode = SKLabelNode(text: "👾")
+//        let labelNode = SKLabelNode(text: "👾")
+//        labelNode.horizontalAlignmentMode = .center
+//        labelNode.verticalAlignmentMode = .center
+
+        // Get Vision's identifier attached to the ARAnchor
+        guard let identifier = ARBridge.shared.anchorsToIdentities[anchor] else { return nil }
+        let labelNode = SKLabelNode(text: identifier)
         labelNode.horizontalAlignmentMode = .center
         labelNode.verticalAlignmentMode = .center
+        labelNode.fontName = UIFont.boldSystemFont(ofSize: 8).fontName
         return labelNode;
     }
     

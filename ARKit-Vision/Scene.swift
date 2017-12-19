@@ -8,6 +8,7 @@
 
 import SpriteKit
 import ARKit
+import Vision
 
 class Scene: SKScene {
     
@@ -27,14 +28,34 @@ class Scene: SKScene {
         // Create anchor using the camera's current position
         if let currentFrame = sceneView.session.currentFrame {
             
-            // Create a transform with a translation of 0.2 meters in front of the camera
-            var translation = matrix_identity_float4x4
-            translation.columns.3.z = -0.2
-            let transform = simd_mul(currentFrame.camera.transform, translation)
-            
-            // Add a new anchor to the session
-            let anchor = ARAnchor(transform: transform)
-            sceneView.session.add(anchor: anchor)
+            DispatchQueue.global(qos: .background).async {
+                do {
+                    let model = try VNCoreMLModel(for: Inceptionv3().model)
+                    let request = VNCoreMLRequest(model: model, completionHandler: { (request, error) in
+                        DispatchQueue.main.async {
+                            guard let results = request.results as? [VNClassificationObservation], let result = results.first else {
+                                print("No results?")
+                                return
+                            }
+                            
+                            // Create a transform with a translation of 0.2 meters in front of the camera
+                            var translation = matrix_identity_float4x4
+                            translation.columns.3.z = -0.2
+                            let transform = simd_mul(currentFrame.camera.transform, translation)
+                            
+                            // Add a new anchor to the session
+                            let anchor = ARAnchor(transform: transform)
+                            ARBridge.shared.anchorsToIdentities[anchor] = result.identifier
+                            
+                            sceneView.session.add(anchor: anchor)
+                        }
+                    })
+                    let handler = VNImageRequestHandler(cvPixelBuffer: currentFrame.capturedImage, options: [:])
+                    try handler.perform([request])
+                } catch {
+                    // Handle catch
+                }
+            }
         }
     }
 }
